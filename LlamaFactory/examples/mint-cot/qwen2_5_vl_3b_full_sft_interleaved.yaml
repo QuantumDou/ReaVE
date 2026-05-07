@@ -1,0 +1,63 @@
+### model
+model_name_or_path: /cephfs/volumes/hpc_data_prj/proj_loukides/bde7318a-93a3-4cd6-90a4-9007857ac4ea/haodi/TIAN/huggingface/Qwen2.5-VL-3B-Instruct
+cache_dir: /cephfs/volumes/hpc_data_prj/proj_loukides/bde7318a-93a3-4cd6-90a4-9007857ac4ea/haodi/TIAN/huggingface
+# 2. 建议开启，否则 7B 全量微调显存压力极大
+flash_attn: fa2
+
+### image resolution (MINT-CoT 标准配置，用于医学图像高分辨率处理)
+image_max_pixels: 54880 #589824  # 1280 * 28 * 28，MINT-CoT 原始配置
+image_min_pixels: 1024     # 32 * 32
+
+### method
+stage: sft
+do_train: true
+finetuning_type: full
+deepspeed: examples/deepspeed/ds_z2_config.json
+
+
+### dataset
+dataset: mulberry_54k_interleave_ra
+template: qwen2_vl  # 使用 qwen2_vl 模板（兼容 Qwen2.5-VL）
+default_system: "You are an expert Radiologist. Analyze medical images and output structured reports. You must strictly follow the user-provided formatting template and diagnostic logic."  # 覆盖默认系统消息
+cutoff_len: 4096 #32768
+overwrite_cache: true #true   # 👈 修改：单卡跑通后，多卡直接读，不覆盖
+preprocessing_num_workers: 32 #32
+dataloader_num_workers:  8 #8
+dataset_dir: data
+media_dir: /cephfs/volumes/hpc_data_prj/proj_loukides/bde7318a-93a3-4cd6-90a4-9007857ac4ea/haodi/TIAN/mimic_cxr/files/
+
+### output
+output_dir: /cephfs/volumes/hpc_data_prj/proj_loukides/bde7318a-93a3-4cd6-90a4-9007857ac4ea/haodi/TIAN/qwen2.5/saves/3b_full_dataset
+logging_steps: 100 #1000
+save_steps: 9999
+save_only_model: true
+save_strategy: 'epoch'
+plot_loss: true
+overwrite_output_dir: true
+
+### train
+per_device_train_batch_size: 4 #4 #1
+gradient_accumulation_steps: 4 #4 #2
+learning_rate: 5.0e-6   #5e-6
+num_train_epochs: 4
+lr_scheduler_type: cosine
+warmup_ratio: 0.03  #0.1
+bf16: true
+ddp_timeout: 180000000
+
+
+#快速测试设置
+# max_samples: 16
+#节省显存：
+# gradient_checkpointing: true
+
+# medical_eval:
+#   project_root: "/cephfs/volumes/hpc_data_usr/k1623928/c50db1e8-c7a8-4708-9be4-3db18a0ea062/scratch_tmp/TIAN/Qwen2.5_CoT/"
+#   eval_script: null  # medical_eval_kit/run.py 的路径（如果未提供，会基于 project_root 推断）
+#   dataset_path: "/cephfs/volumes/hpc_data_usr/k1623928/c50db1e8-c7a8-4708-9be4-3db18a0ea062/scratch_tmp/TIAN/A-Chest-MINT-CoT/IU-test/iu_test_demo.json"
+#   # dataset_path: "/cephfs/volumes/hpc_data_usr/k1623928/c50db1e8-c7a8-4708-9be4-3db18a0ea062/scratch_tmp/TIAN/Qwen2.5_CoT/medical_eval_kit/iu_test_reconstructed.json"
+#   image_base_dir: "/cephfs/volumes/hpc_data_usr/k1623928/c50db1e8-c7a8-4708-9be4-3db18a0ea062/scratch_tmp/TIAN/TriCL_iuxray/data/images/"
+#   eval_root_dir: null  # 训练过程中评估结果的输出路径，如果为 null，会自动基于 project_root 推断为 "medical_eval_results_from_training"
+#   device: "cuda"      # 测试的设备 可选：cpu, cuda, mps, auto（默认：cpu）
+#   # dtype: "float16"   # 测试时的精度 可选：float16, bfloat16, float32, auto（默认：bfloat16）
+

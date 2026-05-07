@@ -1,0 +1,18 @@
+
+{
+  
+  "mulberry_54k_interleave_ra": {
+    "file_name": "/cephfs/volumes/hpc_data_usr/k1623928/c50db1e8-c7a8-4708-9be4-3db18a0ea062/scratch_tmp/TIAN/Qwen2.5_CoT/Data_process/dataset/chest_dataset_54880_full.json",
+    "formatting": "sharegpt",
+    "columns": {
+      "messages": "messages_interleave_ra",
+      "images": "images"
+    },
+    "tags": {
+      "role_tag": "role",
+      "content_tag": "content",
+      "user_tag": "user",
+      "assistant_tag": "assistant"
+    }
+  }
+}

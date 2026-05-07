@@ -1,0 +1,61 @@
+### model
+model_name_or_path: Qwen/Qwen2.5-VL-3B-Instruct
+
+### image resolution (M4 快速测试使用较低分辨率以节省内存)
+image_max_pixels: 50176  # 224 * 224，M4 内存受限时的保守配置，和process_chest_imagenome.py中的max_pixels保持一致
+image_min_pixels: 1024    # 32 * 32，和process_chest_imagenome.py中的min_pixels保持一致
+
+### method
+stage: sft
+do_train: true
+finetuning_type: lora
+lora_target: all
+lora_rank: 2  # 降低 rank 减少计算量
+lora_alpha: 8
+lora_dropout: 0.05
+
+### dataset
+dataset: mulberry_54k_interleave_ra
+template: qwen2_vl
+default_system: "You are an expert Radiologist assistant. Analyze medical images and output structured reports. You must strictly follow the user-provided formatting template and diagnostic logic."  # 覆盖默认系统消息
+cutoff_len: 2048  # 大幅降低序列长度 (8192 → 2048)
+max_samples: 2    # 只用 2 个样本快速测试
+overwrite_cache: true
+preprocessing_num_workers: 2  # 降低
+dataset_dir: data
+media_dir: .
+
+### output
+output_dir: saves/qwen2_5_vl_3b_lora_quick_test
+logging_steps: 1
+save_steps: 9999  # 不保存中间结果
+save_only_model: true
+save_strategy: epoch
+plot_loss: false  # 不绘制 loss 曲线
+overwrite_output_dir: true
+
+### train
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 1
+learning_rate: 5.0e-5
+num_train_epochs: 2
+# max_steps: 2  # 只训练 2 步就够了！
+lr_scheduler_type: cosine
+warmup_ratio: 0.1  # 预热
+bf16: false  # MPS 设备需要 PyTorch >= 2.6.0 才支持 bf16，否则会报错
+fp16: false  # 使用 fp32 精度（MPS 上最稳定）
+ddp_timeout: 180000000
+
+# M4 芯片优化
+dataloader_num_workers: 0
+gradient_checkpointing: true  # 保留，节省内存
+
+
+medical_eval:
+  project_root: "/Users/tsn/Documents/Files/MyProgram/Qwen2.5_Report_Generation/Qwen2_5_CoT"
+  eval_script: null  # medical_eval_kit/run.py 的路径（如果未提供，会基于 project_root 推断）
+  dataset_path: "/Users/tsn/Documents/Files/MyProgram/Report Generation/MINT-CoT/IU-test/iu_test_demo.json"
+  image_base_dir: "/Users/tsn/Documents/Files/MyProgram/Report Generation/MINT-CoT/IU-test"
+  eval_root_dir: null  # 训练过程中评估结果的输出路径，如果为 null，会自动基于 project_root 推断为 "medical_eval_results_from_training"
+  device: "cpu"      # 测试的设备 可选：cpu, cuda, mps, auto（默认：cpu）
+  dtype: "float16"   # 测试时的精度 可选：float16, bfloat16, float32, auto（默认：bfloat16）
